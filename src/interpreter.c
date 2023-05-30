@@ -49,7 +49,12 @@ void read_rom_into_memory(char path[]) {
   fclose(fptr);
 }
 
-enum INSTRUCTION_EXECUTION_RESULT { SUCCESS, STACK_OVERFLOW, STACK_UNDERFLOW };
+enum INSTRUCTION_EXECUTION_RESULT {
+  SUCCESS,
+  STACK_OVERFLOW,
+  STACK_UNDERFLOW,
+  SUCCESS_UPDATED_PC
+};
 
 int execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
@@ -76,7 +81,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     }
     stack_counter--;
     PC = stack[stack_counter];
-    return SUCCESS;
+    return SUCCESS_UPDATED_PC;
   }
 
   switch (highest_nibble) {
@@ -84,7 +89,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     unsigned int address =
         0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
     PC = address;
-    break;
+    return SUCCESS_UPDATED_PC;
   }
   case 0x2: {
     if (stack_counter >= sizeof(stack)) {
@@ -95,8 +100,26 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     unsigned int address =
         0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
     PC = address;
-    break;
+    return SUCCESS_UPDATED_PC;
   }
+  case 0x3:
+    if (registers[higher_nibble] == instruction[1]) {
+      PC += 4;
+      return SUCCESS_UPDATED_PC;
+    }
+    break;
+  case 0x4:
+    if (registers[higher_nibble] != instruction[1]) {
+      PC += 4;
+      return SUCCESS_UPDATED_PC;
+    }
+    break;
+  case 0x5:
+    if (registers[higher_nibble] == registers[lower_nibble]) {
+      PC += 4;
+      return SUCCESS_UPDATED_PC;
+    }
+    break;
   case 0x6:
     registers[higher_nibble] = instruction[1];
     break;
@@ -146,11 +169,17 @@ int execute_instruction(unsigned char instruction[2], Display display) {
       break;
     }
     break;
+  case 0x9:
+    if (registers[higher_nibble] != registers[lower_nibble]) {
+      PC += 4;
+      return SUCCESS_UPDATED_PC;
+    }
+    break;
   case 0xB: {
     unsigned int address =
         0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
     PC = address + registers[0];
-    break;
+    return SUCCESS_UPDATED_PC;
   }
   case 0xC:
     srand(time(0));
@@ -179,7 +208,9 @@ void execute_rom(Display display) {
 
     redraw_frame(display);
 
-    PC += 2;
+    /* if (SUCCESS_UPDATED_PC) { */
+    /*   PC += 2; */
+    /* } */
   }
 }
 
