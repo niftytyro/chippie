@@ -4,7 +4,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 // in this implementation, programs start at 0x50
 // (till that point, memory is taken up by pre-loaded fonts)
@@ -67,9 +69,71 @@ void execute_instruction(unsigned char instruction[2], Display display) {
     // TODO handle return from a subroutine here.
     return;
   }
+
+  switch (highest_nibble) {
+  case 0x1:
+    break;
+  case 0x6:
+    registers[higher_nibble] = instruction[1];
+    break;
+  case 0x7:
+    registers[higher_nibble] += instruction[1];
+    break;
+  case 0x8:
+    switch (lowest_nibble) {
+    case 0x0:
+      registers[higher_nibble] = registers[lower_nibble];
+      break;
+    case 0x1:
+      registers[higher_nibble] =
+          registers[higher_nibble] | registers[lower_nibble];
+      break;
+    case 0x2:
+      registers[higher_nibble] =
+          registers[higher_nibble] & registers[lower_nibble];
+      break;
+    case 0x3:
+      registers[higher_nibble] =
+          registers[higher_nibble] ^ registers[lower_nibble];
+      break;
+    case 0x4:
+      registers[15] =
+          (registers[higher_nibble] + registers[lower_nibble]) > 0xFF;
+      registers[higher_nibble] += registers[lower_nibble];
+      break;
+    case 0x5:
+      registers[15] = registers[higher_nibble] >= registers[lower_nibble];
+      registers[higher_nibble] -= registers[lower_nibble];
+      break;
+    case 0x6:
+      registers[15] = registers[lower_nibble] & 1;
+      registers[higher_nibble] = registers[lower_nibble] >> 1;
+      break;
+    case 0x7:
+      registers[15] = registers[lower_nibble] >= registers[higher_nibble];
+      registers[higher_nibble] =
+          registers[lower_nibble] - registers[higher_nibble];
+      break;
+    case 0xE:
+      registers[15] = (registers[lower_nibble] & 128) / 128;
+      registers[higher_nibble] = registers[lower_nibble] << 1;
+      break;
+    default:
+      break;
+    }
+    break;
+  case 0xC:
+    srand(time(0));
+    registers[higher_nibble] = (rand() % 0xFF) & instruction[1];
+    break;
+  default:
+    break;
+  }
 }
 
 void execute_rom(Display display) {
+  // CHIP-8 instructions are 2 byte each
+  // hence the i+=2 at the end of the loop
   unsigned char instruction[2];
 
   int i = PROGRAM_START;
