@@ -11,8 +11,8 @@
 // in this implementation, programs start at 0x50
 // (till that point, memory is taken up by pre-loaded fonts)
 // and end at 0xF00 (remaining space is taken by the display)
-const size_t PROGRAM_START = 80;
-const size_t PROGRAM_END = 3840;
+const size_t PROGRAM_START = 512;
+const size_t PROGRAM_END = 4096 - 352;
 
 unsigned char registers[16];
 uint16_t I = 0;
