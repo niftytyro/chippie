@@ -50,9 +50,9 @@ void execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
   // corresponding function
-  unsigned char highest_nibble = instruction[0] & 0xF0;
+  unsigned char highest_nibble = (instruction[0] & 0xF0) >> 4;
   unsigned char higher_nibble = instruction[0] & 0x0F;
-  unsigned char lower_nibble = instruction[1] & 0xF0;
+  unsigned char lower_nibble = (instruction[1] & 0xF0) >> 4;
   unsigned char lowest_nibble = instruction[1] & 0x0F;
 
   unsigned char cls_instruction = 0x00E0;
