@@ -14,6 +14,8 @@
 const size_t PROGRAM_START = 512;
 const size_t PROGRAM_END = 4096 - 352;
 
+unsigned int PC = PROGRAM_START;
+
 unsigned char registers[16];
 uint16_t I = 0;
 uint16_t stack[16];
@@ -71,8 +73,12 @@ void execute_instruction(unsigned char instruction[2], Display display) {
   }
 
   switch (highest_nibble) {
-  case 0x1:
+  case 0x1: {
+    unsigned int address =
+        0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    PC = address;
     break;
+  }
   case 0x6:
     registers[higher_nibble] = instruction[1];
     break;
@@ -122,6 +128,12 @@ void execute_instruction(unsigned char instruction[2], Display display) {
       break;
     }
     break;
+  case 0xB: {
+    unsigned int address =
+        0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    PC = address + registers[0];
+    break;
+  }
   case 0xC:
     srand(time(0));
     registers[higher_nibble] = (rand() % 0xFF) & instruction[1];
@@ -136,19 +148,18 @@ void execute_rom(Display display) {
   // hence the i+=2 at the end of the loop
   unsigned char instruction[2];
 
-  int i = PROGRAM_START;
   bool quit = false;
 
-  while (i < PROGRAM_END && !quit) {
-    instruction[0] = memory[i];
-    instruction[1] = memory[i + 1];
+  while (PC < PROGRAM_END && !quit) {
+    instruction[0] = memory[PC];
+    instruction[1] = memory[PC + 1];
 
     quit = handle_sdl_event();
     clear_screen(display);
 
     redraw_frame(display);
 
-    i += 2;
+    PC += 2;
   }
 }
 
