@@ -19,6 +19,7 @@ unsigned int PC = PROGRAM_START;
 unsigned char registers[16];
 uint16_t I = 0;
 uint16_t stack[16];
+unsigned short stack_counter = 0;
 unsigned char memory[4096] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -48,7 +49,9 @@ void read_rom_into_memory(char path[]) {
   fclose(fptr);
 }
 
-void execute_instruction(unsigned char instruction[2], Display display) {
+enum INSTRUCTION_EXECUTION_RESULT { SUCCESS, STACK_OVERFLOW, STACK_UNDERFLOW };
+
+int execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
   // corresponding function
@@ -64,16 +67,31 @@ void execute_instruction(unsigned char instruction[2], Display display) {
   // have variable nibbles first
   if (memcmp(instruction, &cls_instruction, 2) == 0) {
     clear_screen(display);
-    return;
+    return SUCCESS;
   }
 
   if (memcmp(instruction, &return_instruction, 2) == 0) {
-    // TODO handle return from a subroutine here.
-    return;
+    if (stack_counter <= 0) {
+      return STACK_UNDERFLOW;
+    }
+    stack_counter--;
+    PC = stack[stack_counter];
+    return SUCCESS;
   }
 
   switch (highest_nibble) {
   case 0x1: {
+    unsigned int address =
+        0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    PC = address;
+    break;
+  }
+  case 0x2: {
+    if (stack_counter >= sizeof(stack)) {
+      return STACK_OVERFLOW;
+    }
+    stack[stack_counter] = PC;
+    stack_counter++;
     unsigned int address =
         0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
     PC = address;
@@ -141,6 +159,8 @@ void execute_instruction(unsigned char instruction[2], Display display) {
   default:
     break;
   }
+
+  return SUCCESS;
 }
 
 void execute_rom(Display display) {
