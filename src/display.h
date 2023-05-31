@@ -14,7 +14,7 @@ typedef struct Display_Struct Display;
 // function declarations
 Display boot_display();
 
-void draw_random_box(Display display);
+void draw(Display display, unsigned char *memory);
 
 void redraw_frame(Display display);
 

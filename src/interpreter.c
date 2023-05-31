@@ -111,6 +111,24 @@ void handle_register_instruction(unsigned char highest_nibble,
     break;
   }
 }
+void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
+  registers[15] = 0;
+  int mem_location = PROGRAM_END + (registers[VY] * 8) + registers[VX];
+
+  for (int i = 0; i < N; i++) {
+    unsigned char new_pixels = memory[mem_location + i] ^ memory[I + i];
+    if ((memory[mem_location + i] & new_pixels) == memory[mem_location + i]) {
+      registers[15] = 1;
+    }
+    memory[mem_location + i] = new_pixels;
+  }
+}
+
+void empty_screen() {
+  for (int i = PROGRAM_END; i < sizeof(memory); i++) {
+    memory[i] = 0;
+  }
+}
 
 int execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
@@ -127,7 +145,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   // Looking for and executing instructions which don't
   // have variable nibbles first
   if (memcmp(instruction, &cls_instruction, 2) == 0) {
-    clear_screen(display);
+    empty_screen();
     return SUCCESS;
   }
 
@@ -206,6 +224,8 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     registers[higher_nibble] = (rand() % 0xFF) & instruction[1];
     break;
   case 0xD:
+    handle_draw(registers[higher_nibble], registers[lower_nibble],
+                registers[lowest_nibble]);
     break;
   case 0xE:
     if (instruction[1] == 0x9E) {
@@ -281,7 +301,7 @@ void execute_rom(Display display) {
 
       clear_screen(display);
 
-      redraw_frame(display);
+      draw(display, memory);
     }
 
     if (delay_timer > 0) {

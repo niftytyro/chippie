@@ -3,10 +3,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <stdbool.h>
 
-#define DISPLAY_SCALE_FACTOR 15;
+const int DISPLAY_SCALE_FACTOR = 15;
 
 const unsigned int WINDOW_WIDTH = 64 * DISPLAY_SCALE_FACTOR;
 const unsigned int WINDOW_HEIGHT = 32 * DISPLAY_SCALE_FACTOR;
@@ -114,20 +115,27 @@ bool handle_sdl_event() {
 
 void redraw_frame(Display display) { SDL_RenderPresent(display.renderer); }
 
-void draw_random_box(Display display) {
-  bool quit = false;
+void draw_pixel(int x, int y, unsigned char bit, Display display) {
+  SDL_Rect pixel = {x, y, 1 * DISPLAY_SCALE_FACTOR, 1 * DISPLAY_SCALE_FACTOR};
+  if (bit) {
+    SDL_SetRenderDrawColor(display.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+  } else {
+    SDL_SetRenderDrawColor(display.renderer, 0x00, 0x00, 0x00, 0xFF);
+  }
+  SDL_RenderFillRect(display.renderer, &pixel);
+}
 
-  while (!quit) {
+void draw_byte(Display display, unsigned char byte, int x, int y) {
+  for (int i = 0; i < 8; i++) {
+    unsigned char pixel = byte & 1;
+    draw_pixel(x + 7 - i, y, pixel, display);
+    byte = byte >> 1;
+  }
+}
 
-    quit = handle_sdl_event();
-
-    clear_screen(display);
-
-    /* SDL_Rect rect = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 10, 10}; */
-    /* SDL_SetRenderDrawColor(display.renderer, 255, 255, 255, 255); */
-    /* SDL_RenderFillRect(display.renderer, &rect); */
-
-    redraw_frame(display);
+void draw(Display display, unsigned char *memory) {
+  for (int i = 0; i < 256; i++) {
+    draw_byte(display, memory[PROGRAM_END + i], i % 8, i / 8);
   }
 }
 
