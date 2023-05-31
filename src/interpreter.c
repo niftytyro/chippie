@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "audio.h"
 #include "display.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,6 +10,11 @@
 #include <time.h>
 #include <unistd.h>
 
+const unsigned char KEY_NULL = 0xFF;
+
+unsigned char key = KEY_NULL;
+bool wait_for_key = false;
+
 // in this implementation, programs start at 0x50
 // (till that point, memory is taken up by pre-loaded fonts)
 // and end at 0xF00 (remaining space is taken by the display)
@@ -16,6 +22,9 @@ const size_t PROGRAM_START = 512;
 const size_t PROGRAM_END = 4096 - 352;
 
 unsigned int PC = PROGRAM_START;
+
+unsigned char delay_timer = 0;
+unsigned char sound_timer = 0;
 
 unsigned char registers[16];
 uint16_t I = 0;
@@ -176,6 +185,9 @@ int execute_instruction(unsigned char instruction[2], Display display) {
       return SUCCESS_UPDATED_PC;
     }
     break;
+  case 0xA:
+    I = 0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    break;
   case 0xB: {
     unsigned int address =
         0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
@@ -185,6 +197,42 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   case 0xC:
     srand(time(0));
     registers[higher_nibble] = (rand() % 0xFF) & instruction[1];
+    break;
+  case 0xE:
+    if (instruction[1] == 0x9E) {
+      if (key == registers[higher_nibble]) {
+        PC += 4;
+        return SUCCESS_UPDATED_PC;
+      }
+    } else if (instruction[1] == 0xA1) {
+      if (key != registers[higher_nibble]) {
+        PC += 4;
+        return SUCCESS_UPDATED_PC;
+      }
+    }
+    break;
+  case 0xF:
+    switch (instruction[1]) {
+    case 0x15:
+      delay_timer = registers[higher_nibble];
+      break;
+    case 0x07:
+      registers[higher_nibble] = delay_timer;
+      break;
+    case 0x18:
+      sound_timer = registers[higher_nibble];
+      break;
+    case 0x0A:
+      if (key != KEY_NULL) {
+        registers[higher_nibble] = key;
+      } else {
+        wait_for_key = true;
+      }
+      break;
+    }
+    break;
+  case 0x1E:
+    I += registers[higher_nibble];
     break;
   default:
     break;
@@ -201,17 +249,40 @@ void execute_rom(Display display) {
   bool quit = false;
 
   while (PC < PROGRAM_END && !quit) {
-    instruction[0] = memory[PC];
-    instruction[1] = memory[PC + 1];
+    if (sound_timer >= 2) {
+      play_sound();
+    }
 
     quit = handle_sdl_event();
-    clear_screen(display);
 
-    redraw_frame(display);
+    if (wait_for_key && key != KEY_NULL) {
+      PC -= 2;
+      wait_for_key = false;
+    }
 
-    /* if (SUCCESS_UPDATED_PC) { */
-    /*   PC += 2; */
-    /* } */
+    if (!wait_for_key) {
+      instruction[0] = memory[PC];
+      instruction[1] = memory[PC + 1];
+
+      int result = execute_instruction(instruction, display);
+
+      if (result != SUCCESS_UPDATED_PC) {
+        PC += 2;
+      }
+
+      clear_screen(display);
+
+      redraw_frame(display);
+    }
+
+    if (delay_timer > 0) {
+      delay_timer--;
+    }
+    if (sound_timer > 0) {
+      sound_timer--;
+    }
+
+    key = KEY_NULL;
 
     usleep(1000 * 16);
   }

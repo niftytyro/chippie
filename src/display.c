@@ -1,5 +1,8 @@
 #include "display.h"
+#include "interpreter.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <stdbool.h>
 
@@ -19,12 +22,6 @@ Display boot_display() {
   Display display;
   display.renderer = NULL;
   display.window = NULL;
-  int sdl_init_failure = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-
-  if (sdl_init_failure) {
-    log_sdl_error("Failed to initialize sdl.");
-    return display;
-  }
 
   display.window = SDL_CreateWindow("Chippie", 100, 100, WINDOW_WIDTH,
                                     WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -55,6 +52,59 @@ bool handle_sdl_event() {
   while (SDL_PollEvent(&event) != 0) {
     if (event.type == SDL_QUIT) {
       quit = true;
+    } else if (event.type == SDL_KEYDOWN) {
+      switch (event.key.keysym.sym) {
+      case SDLK_1:
+        key = 0x1;
+        break;
+      case SDLK_2:
+        key = 0x2;
+        break;
+      case SDLK_3:
+        key = 0x3;
+        break;
+      case SDLK_4:
+        key = 0xC;
+        break;
+      case SDLK_q:
+        key = 0x4;
+        break;
+      case SDLK_w:
+        key = 0x5;
+        break;
+      case SDLK_e:
+        key = 0x6;
+        break;
+      case SDLK_r:
+        key = 0xD;
+        break;
+      case SDLK_a:
+        key = 0x7;
+        break;
+      case SDLK_s:
+        key = 0x8;
+        break;
+      case SDLK_d:
+        key = 0x9;
+        break;
+      case SDLK_f:
+        key = 0xE;
+        break;
+      case SDLK_z:
+        key = 0xA;
+        break;
+      case SDLK_x:
+        key = 0x0;
+        break;
+      case SDLK_c:
+        key = 0xB;
+        break;
+      case SDLK_v:
+        key = 0xF;
+        break;
+      default:
+        break;
+      }
     }
   }
 
@@ -84,5 +134,7 @@ void draw_random_box(Display display) {
 void exit_display(Display display) {
   SDL_DestroyRenderer(display.renderer);
   SDL_DestroyWindow(display.window);
-  SDL_Quit();
+
+  display.renderer = NULL;
+  display.window = NULL;
 }

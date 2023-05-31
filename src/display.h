@@ -22,6 +22,8 @@ bool handle_sdl_event();
 
 void clear_screen(Display display);
 
+void log_sdl_error(char *msg);
+
 void exit_display(Display display);
 
 #endif
