@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 // in this implementation, programs start at 0x50
 // (till that point, memory is taken up by pre-loaded fonts)
@@ -211,6 +212,8 @@ void execute_rom(Display display) {
     /* if (SUCCESS_UPDATED_PC) { */
     /*   PC += 2; */
     /* } */
+
+    usleep(1000 * 16);
   }
 }
 
