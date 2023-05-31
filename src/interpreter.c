@@ -66,6 +66,52 @@ enum INSTRUCTION_EXECUTION_RESULT {
   SUCCESS_UPDATED_PC
 };
 
+void handle_register_instruction(unsigned char highest_nibble,
+                                 unsigned char higher_nibble,
+                                 unsigned char lower_nibble,
+                                 unsigned char lowest_nibble) {
+  switch (lowest_nibble) {
+  case 0x0:
+    registers[higher_nibble] = registers[lower_nibble];
+    break;
+  case 0x1:
+    registers[higher_nibble] =
+        registers[higher_nibble] | registers[lower_nibble];
+    break;
+  case 0x2:
+    registers[higher_nibble] =
+        registers[higher_nibble] & registers[lower_nibble];
+    break;
+  case 0x3:
+    registers[higher_nibble] =
+        registers[higher_nibble] ^ registers[lower_nibble];
+    break;
+  case 0x4:
+    registers[15] = (registers[higher_nibble] + registers[lower_nibble]) > 0xFF;
+    registers[higher_nibble] += registers[lower_nibble];
+    break;
+  case 0x5:
+    registers[15] = registers[higher_nibble] >= registers[lower_nibble];
+    registers[higher_nibble] -= registers[lower_nibble];
+    break;
+  case 0x6:
+    registers[15] = registers[lower_nibble] & 1;
+    registers[higher_nibble] = registers[lower_nibble] >> 1;
+    break;
+  case 0x7:
+    registers[15] = registers[lower_nibble] >= registers[higher_nibble];
+    registers[higher_nibble] =
+        registers[lower_nibble] - registers[higher_nibble];
+    break;
+  case 0xE:
+    registers[15] = (registers[lower_nibble] & 128) / 128;
+    registers[higher_nibble] = registers[lower_nibble] << 1;
+    break;
+  default:
+    break;
+  }
+}
+
 int execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
@@ -137,47 +183,8 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     registers[higher_nibble] += instruction[1];
     break;
   case 0x8:
-    switch (lowest_nibble) {
-    case 0x0:
-      registers[higher_nibble] = registers[lower_nibble];
-      break;
-    case 0x1:
-      registers[higher_nibble] =
-          registers[higher_nibble] | registers[lower_nibble];
-      break;
-    case 0x2:
-      registers[higher_nibble] =
-          registers[higher_nibble] & registers[lower_nibble];
-      break;
-    case 0x3:
-      registers[higher_nibble] =
-          registers[higher_nibble] ^ registers[lower_nibble];
-      break;
-    case 0x4:
-      registers[15] =
-          (registers[higher_nibble] + registers[lower_nibble]) > 0xFF;
-      registers[higher_nibble] += registers[lower_nibble];
-      break;
-    case 0x5:
-      registers[15] = registers[higher_nibble] >= registers[lower_nibble];
-      registers[higher_nibble] -= registers[lower_nibble];
-      break;
-    case 0x6:
-      registers[15] = registers[lower_nibble] & 1;
-      registers[higher_nibble] = registers[lower_nibble] >> 1;
-      break;
-    case 0x7:
-      registers[15] = registers[lower_nibble] >= registers[higher_nibble];
-      registers[higher_nibble] =
-          registers[lower_nibble] - registers[higher_nibble];
-      break;
-    case 0xE:
-      registers[15] = (registers[lower_nibble] & 128) / 128;
-      registers[higher_nibble] = registers[lower_nibble] << 1;
-      break;
-    default:
-      break;
-    }
+    handle_register_instruction(highest_nibble, higher_nibble, lower_nibble,
+                                lowest_nibble);
     break;
   case 0x9:
     if (registers[higher_nibble] != registers[lower_nibble]) {
@@ -197,6 +204,8 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   case 0xC:
     srand(time(0));
     registers[higher_nibble] = (rand() % 0xFF) & instruction[1];
+    break;
+  case 0xD:
     break;
   case 0xE:
     if (instruction[1] == 0x9E) {
@@ -229,10 +238,10 @@ int execute_instruction(unsigned char instruction[2], Display display) {
         wait_for_key = true;
       }
       break;
+    case 0x1E:
+      I += registers[higher_nibble];
+      break;
     }
-    break;
-  case 0x1E:
-    I += registers[higher_nibble];
     break;
   default:
     break;
