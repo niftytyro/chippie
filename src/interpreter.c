@@ -66,51 +66,46 @@ enum INSTRUCTION_EXECUTION_RESULT {
   SUCCESS_UPDATED_PC
 };
 
-void handle_register_instruction(unsigned char highest_nibble,
-                                 unsigned char higher_nibble,
-                                 unsigned char lower_nibble,
-                                 unsigned char lowest_nibble) {
-  switch (lowest_nibble) {
+void handle_register_instruction(unsigned char P, unsigned char X,
+                                 unsigned char Y, unsigned char N) {
+  switch (N) {
   case 0x0:
-    registers[higher_nibble] = registers[lower_nibble];
+    registers[X] = registers[Y];
     break;
   case 0x1:
-    registers[higher_nibble] =
-        registers[higher_nibble] | registers[lower_nibble];
+    registers[X] = registers[X] | registers[Y];
     break;
   case 0x2:
-    registers[higher_nibble] =
-        registers[higher_nibble] & registers[lower_nibble];
+    registers[X] = registers[X] & registers[Y];
     break;
   case 0x3:
-    registers[higher_nibble] =
-        registers[higher_nibble] ^ registers[lower_nibble];
+    registers[X] = registers[X] ^ registers[Y];
     break;
   case 0x4:
-    registers[15] = (registers[higher_nibble] + registers[lower_nibble]) > 0xFF;
-    registers[higher_nibble] += registers[lower_nibble];
+    registers[15] = (registers[X] + registers[Y]) > 0xFF;
+    registers[X] += registers[Y];
     break;
   case 0x5:
-    registers[15] = registers[higher_nibble] >= registers[lower_nibble];
-    registers[higher_nibble] -= registers[lower_nibble];
+    registers[15] = registers[X] >= registers[Y];
+    registers[X] -= registers[Y];
     break;
   case 0x6:
-    registers[15] = registers[lower_nibble] & 1;
-    registers[higher_nibble] = registers[lower_nibble] >> 1;
+    registers[15] = registers[Y] & 1;
+    registers[X] = registers[Y] >> 1;
     break;
   case 0x7:
-    registers[15] = registers[lower_nibble] >= registers[higher_nibble];
-    registers[higher_nibble] =
-        registers[lower_nibble] - registers[higher_nibble];
+    registers[15] = registers[Y] >= registers[X];
+    registers[X] = registers[Y] - registers[X];
     break;
   case 0xE:
-    registers[15] = (registers[lower_nibble] & 128) / 128;
-    registers[higher_nibble] = registers[lower_nibble] << 1;
+    registers[15] = (registers[Y] & 128) / 128;
+    registers[X] = registers[Y] << 1;
     break;
   default:
     break;
   }
 }
+
 void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
   registers[15] = 0;
   int mem_location = PROGRAM_END + (registers[VY] * 8) + registers[VX];
@@ -134,10 +129,10 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
   // corresponding function
-  unsigned char highest_nibble = (instruction[0] & 0xF0) >> 4;
-  unsigned char higher_nibble = instruction[0] & 0x0F;
-  unsigned char lower_nibble = (instruction[1] & 0xF0) >> 4;
-  unsigned char lowest_nibble = instruction[1] & 0x0F;
+  unsigned char P = (instruction[0] & 0xF0) >> 4;
+  unsigned char X = instruction[0] & 0x0F;
+  unsigned char Y = (instruction[1] & 0xF0) >> 4;
+  unsigned char N = instruction[1] & 0x0F;
 
   unsigned char cls_instruction = 0x00E0;
   unsigned char return_instruction = 0x00EE;
@@ -158,10 +153,9 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     return SUCCESS_UPDATED_PC;
   }
 
-  switch (highest_nibble) {
+  switch (P) {
   case 0x1: {
-    unsigned int address =
-        0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    unsigned int address = 0x0 | X << 8 | Y << 4 | N;
     PC = address;
     return SUCCESS_UPDATED_PC;
   }
@@ -171,70 +165,66 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     }
     stack[stack_counter] = PC;
     stack_counter++;
-    unsigned int address =
-        0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    unsigned int address = 0x0 | X << 8 | Y << 4 | N;
     PC = address;
     return SUCCESS_UPDATED_PC;
   }
   case 0x3:
-    if (registers[higher_nibble] == instruction[1]) {
+    if (registers[X] == instruction[1]) {
       PC += 4;
       return SUCCESS_UPDATED_PC;
     }
     break;
   case 0x4:
-    if (registers[higher_nibble] != instruction[1]) {
+    if (registers[X] != instruction[1]) {
       PC += 4;
       return SUCCESS_UPDATED_PC;
     }
     break;
   case 0x5:
-    if (registers[higher_nibble] == registers[lower_nibble]) {
+    if (registers[X] == registers[Y]) {
       PC += 4;
       return SUCCESS_UPDATED_PC;
     }
     break;
   case 0x6:
-    registers[higher_nibble] = instruction[1];
+    registers[X] = instruction[1];
     break;
   case 0x7:
-    registers[higher_nibble] += instruction[1];
+    registers[X] += instruction[1];
     break;
   case 0x8:
-    handle_register_instruction(highest_nibble, higher_nibble, lower_nibble,
-                                lowest_nibble);
+    handle_register_instruction(P, X, Y, N);
     break;
   case 0x9:
-    if (registers[higher_nibble] != registers[lower_nibble]) {
+    if (registers[X] != registers[Y]) {
       PC += 4;
       return SUCCESS_UPDATED_PC;
     }
     break;
   case 0xA:
-    I = 0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    I = 0x0 | X << 8 | Y << 4 | N;
     break;
   case 0xB: {
-    unsigned int address =
-        0x0 | higher_nibble << 8 | lower_nibble << 4 | lowest_nibble;
+    unsigned int address = 0x0 | X << 8 | Y << 4 | N;
     PC = address + registers[0];
     return SUCCESS_UPDATED_PC;
   }
   case 0xC:
     srand(time(0));
-    registers[higher_nibble] = (rand() % 0xFF) & instruction[1];
+    registers[X] = (rand() % 0xFF) & instruction[1];
     break;
   case 0xD:
-    handle_draw(registers[higher_nibble], registers[lower_nibble],
-                registers[lowest_nibble]);
+    handle_draw(registers[X], registers[Y], registers[N]);
     break;
   case 0xE:
     if (instruction[1] == 0x9E) {
-      if (key == registers[higher_nibble]) {
+      if (key == registers[X]) {
         PC += 4;
         return SUCCESS_UPDATED_PC;
       }
     } else if (instruction[1] == 0xA1) {
-      if (key != registers[higher_nibble]) {
+      if (key != registers[X]) {
         PC += 4;
         return SUCCESS_UPDATED_PC;
       }
@@ -243,23 +233,23 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   case 0xF:
     switch (instruction[1]) {
     case 0x15:
-      delay_timer = registers[higher_nibble];
+      delay_timer = registers[X];
       break;
     case 0x07:
-      registers[higher_nibble] = delay_timer;
+      registers[X] = delay_timer;
       break;
     case 0x18:
-      sound_timer = registers[higher_nibble];
+      sound_timer = registers[X];
       break;
     case 0x0A:
       if (key != KEY_NULL) {
-        registers[higher_nibble] = key;
+        registers[X] = key;
       } else {
         wait_for_key = true;
       }
       break;
     case 0x1E:
-      I += registers[higher_nibble];
+      I += registers[X];
       break;
     }
     break;
