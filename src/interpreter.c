@@ -232,14 +232,38 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     break;
   case 0xF:
     switch (instruction[1]) {
-    case 0x15:
-      delay_timer = registers[X];
-      break;
     case 0x07:
       registers[X] = delay_timer;
       break;
+    case 0x15:
+      delay_timer = registers[X];
+      break;
     case 0x18:
       sound_timer = registers[X];
+      break;
+    case 0x29:
+      I = registers[X] * 5;
+      break;
+    case 0x33: {
+      unsigned char value = registers[X];
+      for (int i = 0; i < 3; i++) {
+        int digit = value % 10;
+        memory[I + i] = digit;
+        value = value / 10;
+      }
+      break;
+    }
+    case 0x55:
+      for (int i = 0; i < X + 1; i++) {
+        memory[I] = registers[i];
+        I++;
+      }
+      break;
+    case 0x65:
+      for (int i = 0; i < X + 1; i++) {
+        registers[i] = memory[I];
+        I++;
+      }
       break;
     case 0x0A:
       if (key != KEY_NULL) {
