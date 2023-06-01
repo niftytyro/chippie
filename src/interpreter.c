@@ -307,11 +307,11 @@ void execute_rom(Display display) {
       instruction[0] = memory[PC];
       instruction[1] = memory[PC + 1];
 
-      int result = execute_instruction(instruction, display);
+      /* int result = execute_instruction(instruction, display); */
 
-      if (result != SUCCESS_UPDATED_PC) {
-        PC += 2;
-      }
+      /* if (result != SUCCESS_UPDATED_PC) { */
+      PC += 2;
+      /* } */
 
       clear_screen(display);
 
@@ -328,21 +328,5 @@ void execute_rom(Display display) {
     key = KEY_NULL;
 
     usleep(1000 * 16);
-  }
-}
-
-void run(Display display) {
-  bool quit = false;
-
-  while (!quit) {
-
-    quit = handle_sdl_event();
-    clear_screen(display);
-
-    /* SDL_Rect rect = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 10, 10}; */
-    /* SDL_SetRenderDrawColor(display.renderer, 255, 255, 255, 255); */
-    /* SDL_RenderFillRect(display.renderer, &rect); */
-
-    redraw_frame(display);
   }
 }

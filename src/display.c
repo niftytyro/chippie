@@ -113,8 +113,6 @@ bool handle_sdl_event() {
   return quit;
 }
 
-void redraw_frame(Display display) { SDL_RenderPresent(display.renderer); }
-
 void draw_pixel(int x, int y, unsigned char bit, Display display) {
   SDL_Rect pixel = {x, y, 1 * DISPLAY_SCALE_FACTOR, 1 * DISPLAY_SCALE_FACTOR};
   if (bit) {
@@ -137,6 +135,7 @@ void draw(Display display, unsigned char *memory) {
   for (int i = 0; i < 256; i++) {
     draw_byte(display, memory[PROGRAM_END + i], i % 8, i / 8);
   }
+  SDL_RenderPresent(display.renderer);
 }
 
 void exit_display(Display display) {

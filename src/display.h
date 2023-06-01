@@ -16,7 +16,6 @@ Display boot_display();
 
 void draw(Display display, unsigned char *memory);
 
-void redraw_frame(Display display);
 
 bool handle_sdl_event();
 
