@@ -307,11 +307,11 @@ void execute_rom(Display display) {
       instruction[0] = memory[PC];
       instruction[1] = memory[PC + 1];
 
-      /* int result = execute_instruction(instruction, display); */
+      int result = execute_instruction(instruction, display);
 
-      /* if (result != SUCCESS_UPDATED_PC) { */
-      PC += 2;
-      /* } */
+      if (result != SUCCESS_UPDATED_PC) {
+        PC += 2;
+      }
 
       clear_screen(display);
 
