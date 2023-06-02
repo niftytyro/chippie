@@ -267,7 +267,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
       unsigned char value = registers[X];
       for (int i = 0; i < 3; i++) {
         int digit = value % 10;
-        memory[I + i] = digit;
+        memory[I + 2 - i] = digit;
         value = value / 10;
       }
       break;
