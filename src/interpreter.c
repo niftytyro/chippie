@@ -229,9 +229,11 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     handle_register_instruction(P, X, Y, N);
     break;
   case 0x9:
-    if (registers[X] != registers[Y]) {
-      PC += 4;
-      return SUCCESS_UPDATED_PC;
+    if (N == 0) {
+      if (registers[X] != registers[Y]) {
+        PC += 4;
+        return SUCCESS_UPDATED_PC;
+      }
     }
     break;
   case 0xA:
