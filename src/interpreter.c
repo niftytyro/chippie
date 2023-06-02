@@ -242,7 +242,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     return SUCCESS_UPDATED_PC;
   case 0xC:
     srand(time(0));
-    registers[X] = (rand() % 0xFF) & instruction[1];
+    registers[X] = (rand() & 0xFF) & instruction[1];
     break;
   case 0xD:
     handle_draw(registers[X], registers[Y], N);
