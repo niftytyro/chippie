@@ -1,6 +1,7 @@
 #include "interpreter.h"
 #include "audio.h"
 #include "display.h"
+#include <SDL2/SDL_events.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -14,6 +15,8 @@ const unsigned char KEY_NULL = 0xFF;
 
 unsigned char key = KEY_NULL;
 bool wait_for_key = false;
+
+bool vram_updated = true;
 
 // in this implementation, programs start at 0x50
 // (till that point, memory is taken up by pre-loaded fonts)
@@ -124,6 +127,7 @@ void update_display_byte(int address, unsigned char sprite) {
   memory[address] = memory[address] ^ sprite;
   if ((memory[address] & previous_pixels) != memory[address]) {
     registers[15] = 1;
+    vram_updated = true;
   }
 }
 
@@ -155,11 +159,16 @@ void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
 
 void empty_screen() {
   for (int i = PROGRAM_END; i < sizeof(memory); i++) {
+    if (memory[i] != 0) {
+      vram_updated = true;
+    }
     memory[i] = 0;
   }
 }
 
-int execute_instruction(unsigned char instruction[2], Display display) {
+int execute_instruction(unsigned char instruction[2], Display display,
+                        unsigned char key) {
+
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
   // corresponding function
@@ -167,7 +176,6 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   unsigned char X = instruction[0] & 0x0F;
   unsigned char Y = instruction[1] >> 4;
   unsigned char N = instruction[1] & 0x0F;
-
 
   unsigned int address = ((instruction[0] << 8) | instruction[1]) & 0xFFF;
 
@@ -323,31 +331,47 @@ void execute_rom(Display display) {
 
   bool quit = false;
 
-  while (PC < PROGRAM_END && !quit) {
-    if (sound_timer >= 2) {
-      play_sound();
-    }
+  while (!quit) {
+    vram_updated = false;
+    clock_t start = clock();
 
-    quit = handle_sdl_event();
+    for (int instructions = 0; instructions < 10; instructions++) {
+      quit = handle_sdl_event();
 
-    if (wait_for_key && key != KEY_NULL) {
-      PC -= 2;
-      wait_for_key = false;
-    }
+      printf("[KEY] %x\n", key);
 
-    if (!wait_for_key) {
-      instruction[0] = memory[PC];
-      instruction[1] = memory[PC + 1];
-
-      int result = execute_instruction(instruction, display);
-
-      if (result != SUCCESS_UPDATED_PC) {
-        PC += 2;
+      if (quit || PC >= PROGRAM_END) {
+        break;
       }
 
-      clear_screen(display);
+      if (wait_for_key && key != KEY_NULL) {
+        PC -= 2;
+        wait_for_key = false;
+      }
 
+      if (!wait_for_key) {
+        instruction[0] = memory[PC];
+        instruction[1] = memory[PC + 1];
+
+        int result = execute_instruction(instruction, display, key);
+
+        if (result != SUCCESS_UPDATED_PC) {
+          PC += 2;
+        }
+      }
+    }
+
+    if (vram_updated) {
+      clear_screen(display);
       draw(display, memory);
+      vram_updated = false;
+    }
+
+    clock_t end = clock();
+    double time_taken = (double)(end - start) * 1000 / CLOCKS_PER_SEC;
+
+    if (sound_timer >= 2) {
+      play_sound();
     }
 
     if (delay_timer > 0) {
@@ -357,8 +381,8 @@ void execute_rom(Display display) {
       sound_timer--;
     }
 
-    key = KEY_NULL;
-
-    usleep(1000 * 16);
+    if (time_taken < (1000.0 / 60)) {
+      usleep((1000.0 / 60) - time_taken);
+    }
   }
 }

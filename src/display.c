@@ -107,6 +107,8 @@ bool handle_sdl_event() {
       default:
         break;
       }
+    } else if (event.type == SDL_KEYUP) {
+      key = KEY_NULL;
     }
   }
 
