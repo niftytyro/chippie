@@ -74,12 +74,15 @@ void handle_register_instruction(unsigned char P, unsigned char X,
     break;
   case 0x1:
     registers[X] = registers[X] | registers[Y];
+    registers[15] = 0;
     break;
   case 0x2:
     registers[X] = registers[X] & registers[Y];
+    registers[15] = 0;
     break;
   case 0x3:
     registers[X] = registers[X] ^ registers[Y];
+    registers[15] = 0;
     break;
   case 0x4: {
     unsigned char flag = (registers[X] + registers[Y]) > 0xFF;
