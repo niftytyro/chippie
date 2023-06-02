@@ -106,16 +106,37 @@ void handle_register_instruction(unsigned char P, unsigned char X,
   }
 }
 
+void update_display_byte(int address, unsigned char sprite) {
+  unsigned char previous_pixels = memory[address];
+  memory[address] = memory[address] ^ sprite;
+  if ((memory[address] & previous_pixels) != memory[address]) {
+    registers[15] = 1;
+  }
+}
+
 void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
   registers[15] = 0;
-  int mem_location = PROGRAM_END + (registers[VY] * 8) + registers[VX];
 
   for (int i = 0; i < N; i++) {
-    unsigned char new_pixels = memory[mem_location + i] ^ memory[I + i];
-    if ((memory[mem_location + i] & new_pixels) == memory[mem_location + i]) {
-      registers[15] = 1;
+
+    // since VX is the X location on the screen, and we have bytes in memory, we
+    // need to divide by 8 to find which byte to update. Moreover, X may not
+    // necessarily be a multiple of 8, in that case, we need to update parts of
+    // 2 consecutive bytes.
+    int x = VX / 8;
+    int x_offset = VX % 8;
+    int y = VY * 8 + i * 8;
+
+    unsigned char sprite = memory[I + i];
+
+    int address = PROGRAM_END + y + x;
+
+    if (x_offset == 0) {
+      update_display_byte(address, sprite);
+    } else {
+      update_display_byte(address, sprite >> x_offset);
+      update_display_byte(address + 1, sprite << (8 - x_offset));
     }
-    memory[mem_location + i] = new_pixels;
   }
 }
 
@@ -134,28 +155,26 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   unsigned char Y = (instruction[1] & 0xF0) >> 4;
   unsigned char N = instruction[1] & 0x0F;
 
-  unsigned char cls_instruction = 0x00E0;
-  unsigned char return_instruction = 0x00EE;
-
-  // Looking for and executing instructions which don't
-  // have variable nibbles first
-  if (memcmp(instruction, &cls_instruction, 2) == 0) {
-    empty_screen();
-    return SUCCESS;
-  }
-
-  if (memcmp(instruction, &return_instruction, 2) == 0) {
-    if (stack_counter <= 0) {
-      return STACK_UNDERFLOW;
-    }
-    stack_counter--;
-    PC = stack[stack_counter];
-    return SUCCESS_UPDATED_PC;
-  }
 
   switch (P) {
+  case 0x0:
+    switch (instruction[1]) {
+    case 0xE0:
+      empty_screen();
+      return SUCCESS;
+      break;
+    case 0xEE:
+      if (stack_counter <= 0) {
+        return STACK_UNDERFLOW;
+      }
+      stack_counter--;
+      PC = stack[stack_counter];
+      return SUCCESS_UPDATED_PC;
+      break;
+    }
+    break;
   case 0x1: {
-    unsigned int address = 0x0 | X << 8 | Y << 4 | N;
+    unsigned int address = 0x0 | (X << 8) | (Y << 4) | N;
     PC = address;
     return SUCCESS_UPDATED_PC;
   }
@@ -215,7 +234,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     registers[X] = (rand() % 0xFF) & instruction[1];
     break;
   case 0xD:
-    handle_draw(registers[X], registers[Y], registers[N]);
+    handle_draw(registers[X], registers[Y], N);
     break;
   case 0xE:
     if (instruction[1] == 0x9E) {

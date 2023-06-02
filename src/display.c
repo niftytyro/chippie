@@ -6,6 +6,7 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 const int DISPLAY_SCALE_FACTOR = 15;
 
@@ -114,11 +115,12 @@ bool handle_sdl_event() {
 }
 
 void draw_pixel(int x, int y, unsigned char bit, Display display) {
-  SDL_Rect pixel = {x, y, 1 * DISPLAY_SCALE_FACTOR, 1 * DISPLAY_SCALE_FACTOR};
+  SDL_Rect pixel = {x * DISPLAY_SCALE_FACTOR, y * DISPLAY_SCALE_FACTOR,
+                    1 * DISPLAY_SCALE_FACTOR, 1 * DISPLAY_SCALE_FACTOR};
   if (bit) {
-    SDL_SetRenderDrawColor(display.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    SDL_SetRenderDrawColor(display.renderer, 255, 255, 255, 255);
   } else {
-    SDL_SetRenderDrawColor(display.renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, 255);
   }
   SDL_RenderFillRect(display.renderer, &pixel);
 }
@@ -133,7 +135,7 @@ void draw_byte(Display display, unsigned char byte, int x, int y) {
 
 void draw(Display display, unsigned char *memory) {
   for (int i = 0; i < 256; i++) {
-    draw_byte(display, memory[PROGRAM_END + i], i % 8, i / 8);
+    draw_byte(display, memory[PROGRAM_END + i], 8 * (i % 8), i / 8);
   }
   SDL_RenderPresent(display.renderer);
 }
