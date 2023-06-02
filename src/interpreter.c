@@ -81,26 +81,36 @@ void handle_register_instruction(unsigned char P, unsigned char X,
   case 0x3:
     registers[X] = registers[X] ^ registers[Y];
     break;
-  case 0x4:
-    registers[15] = (registers[X] + registers[Y]) > 0xFF;
+  case 0x4: {
+    unsigned char flag = (registers[X] + registers[Y]) > 0xFF;
     registers[X] += registers[Y];
+    registers[15] = flag;
     break;
-  case 0x5:
-    registers[15] = registers[X] >= registers[Y];
+  }
+  case 0x5: {
+    unsigned char flag = registers[X] >= registers[Y];
     registers[X] -= registers[Y];
+    registers[15] = flag;
     break;
-  case 0x6:
-    registers[15] = registers[Y] & 1;
+  }
+  case 0x6: {
+    unsigned char flag = registers[Y] & 1;
     registers[X] = registers[Y] >> 1;
+    registers[15] = flag;
     break;
-  case 0x7:
-    registers[15] = registers[Y] >= registers[X];
+  }
+  case 0x7: {
+    unsigned char flag = registers[Y] >= registers[X];
     registers[X] = registers[Y] - registers[X];
+    registers[15] = flag;
     break;
-  case 0xE:
-    registers[15] = (registers[Y] & 128) / 128;
+  }
+  case 0xE: {
+    unsigned char flag = (registers[Y] & 128) / 128;
     registers[X] = registers[Y] << 1;
+    registers[15] = flag;
     break;
+  }
   default:
     break;
   }
