@@ -137,7 +137,7 @@ void draw_byte(Display display, unsigned char byte, int x, int y) {
 
 void draw(Display display, unsigned char *memory) {
   for (int i = 0; i < 256; i++) {
-    draw_byte(display, memory[PROGRAM_END + i], 8 * (i % 8), i / 8);
+    draw_byte(display, memory[i], 8 * (i % 8), i / 8);
   }
   SDL_RenderPresent(display.renderer);
 }

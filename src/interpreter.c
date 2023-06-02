@@ -22,7 +22,6 @@ bool vram_updated = true;
 // (till that point, memory is taken up by pre-loaded fonts)
 // and end at 0xF00 (remaining space is taken by the display)
 const size_t PROGRAM_START = 512;
-const size_t PROGRAM_END = 4096 - 352;
 
 uint16_t PC = PROGRAM_START;
 
@@ -33,6 +32,7 @@ unsigned char registers[16];
 uint16_t I = 0;
 uint16_t stack[16];
 unsigned short stack_counter = 0;
+unsigned char vram[256];
 unsigned char memory[4096] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -57,7 +57,7 @@ void read_rom_into_memory(char path[]) {
 
   fptr = fopen(path, "rb");
 
-  fread(&memory[PROGRAM_START], 1, PROGRAM_END - PROGRAM_START, fptr);
+  fread(&memory[PROGRAM_START], 1, sizeof(memory) - PROGRAM_START, fptr);
 
   fclose(fptr);
 }
@@ -123,9 +123,9 @@ void handle_register_instruction(unsigned char P, unsigned char X,
 }
 
 void update_display_byte(int address, unsigned char sprite) {
-  unsigned char previous_pixels = memory[address];
-  memory[address] = memory[address] ^ sprite;
-  if ((memory[address] & previous_pixels) != memory[address]) {
+  unsigned char previous_pixels = vram[address];
+  vram[address] = vram[address] ^ sprite;
+  if ((vram[address] & previous_pixels) != vram[address]) {
     registers[15] = 1;
     vram_updated = true;
   }
@@ -146,7 +146,7 @@ void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
 
     unsigned char sprite = memory[I + i];
 
-    int address = PROGRAM_END + y + x;
+    int address = y + x;
 
     if (x_offset == 0) {
       update_display_byte(address, sprite);
@@ -158,16 +158,15 @@ void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
 }
 
 void empty_screen() {
-  for (int i = PROGRAM_END; i < sizeof(memory); i++) {
-    if (memory[i] != 0) {
+  for (int i = 0; i < sizeof(vram); i++) {
+    if (vram[i] != 0) {
       vram_updated = true;
     }
-    memory[i] = 0;
+    vram[i] = 0;
   }
 }
 
-int execute_instruction(unsigned char instruction[2], Display display,
-                        unsigned char key) {
+int execute_instruction(unsigned char instruction[2], Display display) {
 
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
@@ -338,9 +337,7 @@ void execute_rom(Display display) {
     for (int instructions = 0; instructions < 10; instructions++) {
       quit = handle_sdl_event();
 
-      printf("[KEY] %x\n", key);
-
-      if (quit || PC >= PROGRAM_END) {
+      if (quit || PC >= sizeof(memory)) {
         break;
       }
 
@@ -363,7 +360,7 @@ void execute_rom(Display display) {
 
     if (vram_updated) {
       clear_screen(display);
-      draw(display, memory);
+      draw(display, vram);
       vram_updated = false;
     }
 
