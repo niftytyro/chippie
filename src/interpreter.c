@@ -141,9 +141,9 @@ void handle_draw(unsigned char VX, unsigned char VY, unsigned char N) {
     // need to divide by 8 to find which byte to update. Moreover, X may not
     // necessarily be a multiple of 8, in that case, we need to update parts of
     // 2 consecutive bytes.
-    int x = VX / 8;
+    int x = (VX % 64) / 8;
     int x_offset = VX % 8;
-    int y = VY * 8 + i * 8;
+    int y = ((VY + i) % 32) * 8;
 
     unsigned char sprite = memory[I + i];
 
