@@ -21,7 +21,7 @@ bool wait_for_key = false;
 const size_t PROGRAM_START = 512;
 const size_t PROGRAM_END = 4096 - 352;
 
-unsigned int PC = PROGRAM_START;
+uint16_t PC = PROGRAM_START;
 
 unsigned char delay_timer = 0;
 unsigned char sound_timer = 0;
@@ -168,7 +168,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
         return STACK_UNDERFLOW;
       }
       stack_counter--;
-      PC = stack[stack_counter];
+      PC = stack[stack_counter] + 2;
       return SUCCESS_UPDATED_PC;
       break;
     }
