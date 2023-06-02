@@ -38,7 +38,7 @@ int main() {
     return 1;
   }
 
-  read_rom_into_memory("../roms/flags.ch8");
+  read_rom_into_memory("../roms/connect 4.ch8");
   execute_rom(display);
 
   exit_audio();

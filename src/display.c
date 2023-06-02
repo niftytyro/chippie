@@ -5,6 +5,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_scancode.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -54,61 +55,25 @@ bool handle_sdl_event() {
   while (SDL_PollEvent(&event) != 0) {
     if (event.type == SDL_QUIT) {
       quit = true;
-    } else if (event.type == SDL_KEYDOWN) {
-      switch (event.key.keysym.sym) {
-      case SDLK_1:
-        key = 0x1;
-        break;
-      case SDLK_2:
-        key = 0x2;
-        break;
-      case SDLK_3:
-        key = 0x3;
-        break;
-      case SDLK_4:
-        key = 0xC;
-        break;
-      case SDLK_q:
-        key = 0x4;
-        break;
-      case SDLK_w:
-        key = 0x5;
-        break;
-      case SDLK_e:
-        key = 0x6;
-        break;
-      case SDLK_r:
-        key = 0xD;
-        break;
-      case SDLK_a:
-        key = 0x7;
-        break;
-      case SDLK_s:
-        key = 0x8;
-        break;
-      case SDLK_d:
-        key = 0x9;
-        break;
-      case SDLK_f:
-        key = 0xE;
-        break;
-      case SDLK_z:
-        key = 0xA;
-        break;
-      case SDLK_x:
-        key = 0x0;
-        break;
-      case SDLK_c:
-        key = 0xB;
-        break;
-      case SDLK_v:
-        key = 0xF;
-        break;
-      default:
-        break;
-      }
-    } else if (event.type == SDL_KEYUP) {
-      key = KEY_NULL;
+    } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+      const Uint8 *keyboard_state_array = SDL_GetKeyboardState(NULL);
+
+      keys[0x1] = keyboard_state_array[SDL_SCANCODE_1];
+      keys[0x2] = keyboard_state_array[SDL_SCANCODE_2];
+      keys[0x3] = keyboard_state_array[SDL_SCANCODE_3];
+      keys[0xC] = keyboard_state_array[SDL_SCANCODE_4];
+      keys[0x4] = keyboard_state_array[SDL_SCANCODE_Q];
+      keys[0x5] = keyboard_state_array[SDL_SCANCODE_W];
+      keys[0x6] = keyboard_state_array[SDL_SCANCODE_E];
+      keys[0xD] = keyboard_state_array[SDL_SCANCODE_R];
+      keys[0x7] = keyboard_state_array[SDL_SCANCODE_A];
+      keys[0x8] = keyboard_state_array[SDL_SCANCODE_S];
+      keys[0x9] = keyboard_state_array[SDL_SCANCODE_D];
+      keys[0xE] = keyboard_state_array[SDL_SCANCODE_F];
+      keys[0xA] = keyboard_state_array[SDL_SCANCODE_Z];
+      keys[0x0] = keyboard_state_array[SDL_SCANCODE_X];
+      keys[0xB] = keyboard_state_array[SDL_SCANCODE_C];
+      keys[0xF] = keyboard_state_array[SDL_SCANCODE_V];
     }
   }
 

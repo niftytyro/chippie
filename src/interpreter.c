@@ -13,7 +13,8 @@
 
 const unsigned char KEY_NULL = 0xFF;
 
-unsigned char key = KEY_NULL;
+bool keys[16] = {};
+bool prev_keys[16] = {};
 bool wait_for_key = false;
 
 bool vram_updated = true;
@@ -258,12 +259,12 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     break;
   case 0xE:
     if (instruction[1] == 0x9E) {
-      if (key == registers[X]) {
+      if (keys[registers[X]]) {
         PC += 4;
         return SUCCESS_UPDATED_PC;
       }
     } else if (instruction[1] == 0xA1) {
-      if (key != registers[X]) {
+      if (!keys[registers[X]]) {
         PC += 4;
         return SUCCESS_UPDATED_PC;
       }
@@ -305,10 +306,19 @@ int execute_instruction(unsigned char instruction[2], Display display) {
       }
       break;
     case 0x0A:
-      if (key != KEY_NULL) {
-        registers[X] = key;
+      if (wait_for_key) {
+        PC -= 2;
+        for (int i = 0; i < 16; i++) {
+          if (prev_keys[i] && !keys[i]) {
+            PC += 2;
+            wait_for_key = false;
+            registers[X] = i;
+            break;
+          }
+        }
       } else {
         wait_for_key = true;
+        PC -= 2;
       }
       break;
     case 0x1E:
@@ -335,26 +345,20 @@ void execute_rom(Display display) {
     clock_t start = clock();
 
     for (int instructions = 0; instructions < 10; instructions++) {
+      memcpy(prev_keys, keys, sizeof(prev_keys));
       quit = handle_sdl_event();
 
       if (quit || PC >= sizeof(memory)) {
         break;
       }
 
-      if (wait_for_key && key != KEY_NULL) {
-        PC -= 2;
-        wait_for_key = false;
-      }
+      instruction[0] = memory[PC];
+      instruction[1] = memory[PC + 1];
 
-      if (!wait_for_key) {
-        instruction[0] = memory[PC];
-        instruction[1] = memory[PC + 1];
+      int result = execute_instruction(instruction, display);
 
-        int result = execute_instruction(instruction, display, key);
-
-        if (result != SUCCESS_UPDATED_PC) {
-          PC += 2;
-        }
+      if (result != SUCCESS_UPDATED_PC) {
+        PC += 2;
       }
     }
 
