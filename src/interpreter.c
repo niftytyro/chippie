@@ -109,7 +109,7 @@ void handle_register_instruction(unsigned char P, unsigned char X,
     break;
   }
   case 0xE: {
-    unsigned char flag = (registers[Y] & 128) / 128;
+    unsigned char flag = registers[Y] >> 7;
     registers[X] = registers[Y] << 1;
     registers[15] = flag;
     break;
@@ -163,11 +163,13 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   // Here, we take the higher and lower nibbles of the first and second byte of
   // instruction to help figure out the instruction and execute the
   // corresponding function
-  unsigned char P = (instruction[0] & 0xF0) >> 4;
+  unsigned char P = instruction[0] >> 4;
   unsigned char X = instruction[0] & 0x0F;
-  unsigned char Y = (instruction[1] & 0xF0) >> 4;
+  unsigned char Y = instruction[1] >> 4;
   unsigned char N = instruction[1] & 0x0F;
 
+
+  unsigned int address = ((instruction[0] << 8) | instruction[1]) & 0xFFF;
 
   switch (P) {
   case 0x0:
@@ -186,21 +188,19 @@ int execute_instruction(unsigned char instruction[2], Display display) {
       break;
     }
     break;
-  case 0x1: {
-    unsigned int address = 0x0 | (X << 8) | (Y << 4) | N;
+  case 0x1:
     PC = address;
     return SUCCESS_UPDATED_PC;
-  }
-  case 0x2: {
+
+  case 0x2:
     if (stack_counter >= sizeof(stack)) {
       return STACK_OVERFLOW;
     }
     stack[stack_counter] = PC;
     stack_counter++;
-    unsigned int address = 0x0 | X << 8 | Y << 4 | N;
     PC = address;
     return SUCCESS_UPDATED_PC;
-  }
+
   case 0x3:
     if (registers[X] == instruction[1]) {
       PC += 4;
@@ -237,11 +237,9 @@ int execute_instruction(unsigned char instruction[2], Display display) {
   case 0xA:
     I = 0x0 | X << 8 | Y << 4 | N;
     break;
-  case 0xB: {
-    unsigned int address = 0x0 | X << 8 | Y << 4 | N;
+  case 0xB:
     PC = address + registers[0];
     return SUCCESS_UPDATED_PC;
-  }
   case 0xC:
     srand(time(0));
     registers[X] = (rand() % 0xFF) & instruction[1];
