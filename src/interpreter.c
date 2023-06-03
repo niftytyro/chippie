@@ -245,7 +245,7 @@ int execute_instruction(unsigned char instruction[2], Display display) {
     }
     break;
   case 0xA:
-    I = 0x0 | X << 8 | Y << 4 | N;
+    I = ((instruction[0] << 8) | instruction[1]) & 0xFFF;
     break;
   case 0xB:
     PC = address + registers[0];
