@@ -5,7 +5,7 @@ This is a CHIP-8 interpreter in C (I learned some C _while_ writing this). I wan
 Chippie works fine with CHIP-8 roms, though there are a few things I wish to do before I can call this finished:
 
 - Adding a _nice_ UI for selecting ROMs and debugging info and such
-- Adding nobs for things like adjusting frame rate, toggling clipping/wrapping behavior for display, etc
+- Adding knobs for things like adjusting frame rate, toggling clipping/wrapping behavior for display, etc
 - Also, probably extending it to cover SCHIP & XO-CHIP (_no promises though_)
 
 I will probably touch on those things in the near future. But for now, I am signing off from this project.  
